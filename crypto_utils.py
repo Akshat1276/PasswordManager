@@ -10,16 +10,18 @@ def derive_key(password: str, salt: bytes, iterations: int = 100_000) -> bytes:
     """Derive a 32-byte AES key from the password using PBKDF2 with SHA256."""
     return PBKDF2(password, salt, dkLen=32, count=iterations, hmac_hash_module=SHA256)
 
-def encrypt_gcm(plaintext: bytes, key: bytes) -> bytes:
-    """Encrypt plaintext using AES-GCM."""
+def encrypt_gcm(plaintext: bytes, key: bytes) -> tuple:
+    """Encrypt plaintext using AES-GCM. Returns (ciphertext, nonce/iv)."""
     cipher = AES.new(key, AES.MODE_GCM)
     ciphertext, tag = cipher.encrypt_and_digest(plaintext)
-    return base64.b64encode(cipher.nonce + tag + ciphertext)
+    # Store tag with ciphertext for authentication
+    enc = base64.b64encode(tag + ciphertext)
+    return enc, cipher.nonce
 
-def decrypt_gcm(enc_data: bytes, key: bytes) -> bytes:
-    """Decrypt AES-GCM encrypted data."""
+def decrypt_gcm(enc_data: bytes, key: bytes, nonce: bytes) -> bytes:
+    """Decrypt AES-GCM encrypted data using nonce/iv."""
     raw = base64.b64decode(enc_data)
-    nonce, tag, ciphertext = raw[:16], raw[16:32], raw[32:]
+    tag, ciphertext = raw[:16], raw[16:]
     cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
     return cipher.decrypt_and_verify(ciphertext, tag)
 
