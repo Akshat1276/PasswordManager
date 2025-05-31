@@ -4,6 +4,11 @@ import json
 import os
 from crypto_utils import verify_password, derive_key, hash_password
 from manager import add_credential, get_credentials, get_credential_by_id, delete_credential
+import secrets
+import string
+import pyperclip
+import threading
+import time
 
 MASTER_PASS_FILE = "master_pass.json"
 
@@ -121,6 +126,8 @@ class Dashboard(tk.Toplevel):
         tk.Button(btn_frame, text="Add", command=self.add_entry).pack(side=tk.LEFT, padx=5)
         tk.Button(btn_frame, text="View", command=self.view_entry).pack(side=tk.LEFT, padx=5)
         tk.Button(btn_frame, text="Delete", command=self.delete_entry).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Copy", command=self.copy_entry).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Generate", command=self.generate_password_dialog).pack(side=tk.LEFT, padx=5)
 
     def refresh_list(self, filter_text=""):
         for row in self.tree.get_children():
@@ -139,9 +146,11 @@ class Dashboard(tk.Toplevel):
         service = simpledialog.askstring("Service", "Enter service name:")
         username = simpledialog.askstring("Username", "Enter username:")
         password = simpledialog.askstring("Password", "Enter password:", show="*")
-        if service and username and password:
-            add_credential(service, username, password, self.key)
-            self.refresh_list(self.search_var.get())
+        if not service or not username or not password:
+            messagebox.showerror("Error", "All fields are required.")
+            return
+        add_credential(service, username, password, self.key)
+        self.refresh_list(self.search_var.get())
 
     def view_entry(self):
         selected = self.tree.selection()
@@ -152,6 +161,9 @@ class Dashboard(tk.Toplevel):
         entry = get_credential_by_id(entry_id, self.key)
         if entry:
             messagebox.showinfo("Credential", f"Service: {entry['service']}\nUsername: {entry['username']}\nPassword: {entry['password']}")
+        else:
+            messagebox.showerror("Error", "Entry not found.")
+            return
 
     def delete_entry(self):
         selected = self.tree.selection()
@@ -162,6 +174,25 @@ class Dashboard(tk.Toplevel):
         delete_credential(entry_id)
         self.refresh_list(self.search_var.get())
 
+    def copy_entry(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Select Entry", "Please select an entry to copy.")
+            return
+        entry_id = int(selected[0])
+        entry = get_credential_by_id(entry_id, self.key)
+        if entry:
+            copy_to_clipboard(entry['password'])
+            messagebox.showinfo("Copied", "Password copied to clipboard (auto-clears in 10s).")
+
+    def generate_password_dialog(self):
+        length = simpledialog.askinteger("Password Length", "Enter password length (min 5):", minvalue=5, initialvalue=16)
+        if length:
+            pwd = generate_password(length)
+            # Show generated password and option to copy
+            if messagebox.askyesno("Generated Password", f"{pwd}\n\nCopy to clipboard?"):
+                copy_to_clipboard(pwd)
+
 def get_encryption_key_via_gui():
     root = tk.Tk()
     style = ttk.Style()
@@ -169,6 +200,22 @@ def get_encryption_key_via_gui():
     app = LoginWindow(root)
     root.mainloop()
     return app.key
+def generate_password(length=16):
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    while True:
+        password = ''.join(secrets.choice(alphabet) for _ in range(length))
+        # Ensure password has at least one lowercase, uppercase, digit, and symbol
+        if (any(c.islower() for c in password) and any(c.isupper() for c in password)
+            and any(c.isdigit() for c in password) and any(c in string.punctuation for c in password)):
+            return password
+def copy_to_clipboard(text, clear_after=10):
+    pyperclip.copy(text)
+    def clear_clipboard():
+        time.sleep(clear_after)
+        # Only clear if clipboard still has the password
+        if pyperclip.paste() == text:
+            pyperclip.copy('')
+    threading.Thread(target=clear_clipboard, daemon=True).start()
 
 if __name__ == "__main__":
     key = get_encryption_key_via_gui()
