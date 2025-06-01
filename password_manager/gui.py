@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import json
 import os
-from crypto_utils import verify_password, derive_key, hash_password
-from manager import add_credential, get_credentials, get_credential_by_id, delete_credential
+from password_manager.crypto_utils import verify_password, derive_key, hash_password
+from password_manager.manager import add_credential, get_credentials, get_credential_by_id, delete_credential
 import secrets
 import string
 import pyperclip
@@ -13,6 +13,8 @@ import time
 MASTER_PASS_FILE = "master_pass.json"
 
 class LoginWindow:
+    """Login window for the password manager."""
+
     def __init__(self, master):
         self.master = master
         master.title("Password Manager Login")
@@ -38,13 +40,9 @@ class LoginWindow:
 
         self.login_button = ttk.Button(master, text="Login", command=self.login, style='TButton')
         self.login_button.pack(pady=(10, 5))
-        self.login_button.bind("<Enter>", self.on_enter)
-        self.login_button.bind("<Leave>", self.on_leave)
 
         self.reset_button = ttk.Button(master, text="Reset Master Password", command=self.reset_password, style='TButton')
         self.reset_button.pack(pady=(0, 10))
-        self.reset_button.bind("<Enter>", self.on_enter)
-        self.reset_button.bind("<Leave>", self.on_leave)
 
         self.key = None
 

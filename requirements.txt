@@ -1,3 +1,10 @@
 pycryptodome
 argon2-cffi
-rich            # for better CLI formatting (optional)
+pyperclip
+tk
+customtkinter
+rich
+
+#Go to your terminal and run the following command to install the dependencies:
+#pip install -r requirements.txt
+# If you are using a virtual environment, make sure to activate it before running the command.

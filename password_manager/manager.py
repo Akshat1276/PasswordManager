@@ -1,9 +1,10 @@
-from db import get_connection, init_db
-from crypto_utils import encrypt_gcm, decrypt_gcm
+from password_manager.db import get_connection, init_db
+from password_manager.crypto_utils import encrypt_gcm, decrypt_gcm
 
 init_db()
 
 def add_credential(service, username, password, key):
+    """Encrypt and add a credential to the database."""
     encrypted, iv = encrypt_gcm(password.encode(), key)
     with get_connection() as conn:
         conn.execute(
@@ -13,13 +14,18 @@ def add_credential(service, username, password, key):
         conn.commit()
 
 def get_credentials():
+    """Retrieve all credentials (id, service, username) from the database."""
     with get_connection() as conn:
         cur = conn.execute("SELECT id, service, username FROM credentials")
         return cur.fetchall()
 
 def get_credential_by_id(entry_id, key):
+    """Retrieve and decrypt a credential by its ID."""
     with get_connection() as conn:
-        cur = conn.execute("SELECT service, username, encrypted_password, iv FROM credentials WHERE id=?", (entry_id,))
+        cur = conn.execute(
+            "SELECT service, username, encrypted_password, iv FROM credentials WHERE id=?",
+            (entry_id,)
+        )
         row = cur.fetchone()
         if row:
             service, username, encrypted_password, iv = row
@@ -28,6 +34,7 @@ def get_credential_by_id(entry_id, key):
         return None
 
 def delete_credential(entry_id):
+    """Delete a credential from the database by its ID."""
     with get_connection() as conn:
         conn.execute("DELETE FROM credentials WHERE id=?", (entry_id,))
         conn.commit()

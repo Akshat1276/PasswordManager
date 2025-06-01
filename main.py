@@ -1,7 +1,7 @@
 import os
 import getpass
 import json
-from crypto_utils import derive_key, hash_password, verify_password
+from password_manager.crypto_utils import derive_key, hash_password, verify_password
 
 MASTER_PASS_FILE = "master_pass.json"
 

@@ -1,14 +1,120 @@
-progress at the end of DAY-2:
-coded on `crypto_utils.py`, `main.py`, `gui.py`
-Setup the encoding and decoding functions for safety of the data which will be stored by the user in the future usign AES(Advanced Encryption Standard) encryption in CBC(cypher Block chaining) mode
-Also setup the hashing function for the master key which will we used to hash the master password and will be verified everytime the user enters the passwords when logging in into the Password Manager
-Setup basic GUI(Graphical User Interface) with login and reset the password features.
-Everything functional
+# 🔐 Password Manager
 
-Steps to run the project:
-Download the repo
-from the home directory, run the below command:
-1) `python .\main.py` --> This will direct you to set your master password in the CLi(Command Line Interface)
-2) `python .\gui.py` --> This will open a non-resizable GUI window where you will login with your master password or reset it if you want to
+A secure, cross-platform password manager built with Python and Tkinter.  
+It stores your credentials in an encrypted local SQLite database, protected by a master password.
 
-![alt text](image.png)
+---
+
+## 🚀 Features
+
+- **AES-GCM encryption** for all stored passwords
+- **Master password** (never stored, only its hash)
+- **Searchable dashboard** for credentials
+- **Password generator** tool
+- **Clipboard copy** with auto-clear
+- **Reset master password** option
+- **Modern, user-friendly GUI**
+- **Unit tests** for core logic
+
+---
+
+## 📁 Folder Structure
+
+```
+PasswordManager/
+│
+├── password_manager/          # Main package
+│   ├── __init__.py
+│   ├── db.py
+│   ├── manager.py
+│   ├── crypto_utils.py
+│   ├── gui.py
+│
+├── tests/                     # Unit tests
+│   ├── __init__.py
+│   ├── test_manager.py
+│   ├── test_crypto_utils.py
+│
+├── main.py                    # CLI for master password setup/verification
+├── requirements.txt
+├── .gitignore
+├── README.md
+```
+
+---
+
+## 🛠️ Installation & Setup
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/yourusername/PasswordManager.git
+   cd PasswordManager
+   ```
+
+2. **Create and activate a virtual environment (recommended):**
+   ```sh
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+---
+
+## 🏃‍♂️ Usage
+
+### **1. Set up your master password (first run):**
+```sh
+python main.py
+```
+- Follow the prompt to set your master password.
+
+### **2. Launch the GUI:**
+```sh
+python -m password_manager.gui
+```
+or
+```sh
+python password_manager/gui.py
+```
+
+- Log in with your master password.
+- Add, search, view, copy, and delete credentials securely.
+
+---
+
+## 🧪 Running Tests
+
+All core logic is covered by unit tests.
+
+```sh
+python -m unittest discover tests
+```
+
+**Test cases include:**
+- Key derivation, encryption/decryption, and password hashing/verification
+- Adding, retrieving, and deleting credentials
+
+---
+
+## 🔒 Security Notes
+
+- All passwords are encrypted with AES-GCM and a key derived from your master password.
+- The master password is never stored—only its hash and salt.
+- Sensitive files (`vault.db`, `master_pass.json`) are excluded from git via `.gitignore`.
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+
+---
+
+**Enjoy your secure password manager!**
