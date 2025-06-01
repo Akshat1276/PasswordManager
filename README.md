@@ -7,7 +7,7 @@ It stores your credentials in an encrypted local SQLite database, protected by a
 
 ## 🚀 Features
 
-- **AES-GCM encryption** for all stored passwords
+- **AES-GCM (Advanced Encryption Standard in GCM mode) encryption** for all stored passwords
 - **Master password** (never stored, only its hash)
 - **Searchable dashboard** for credentials
 - **Password generator** tool
