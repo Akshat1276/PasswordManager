@@ -79,10 +79,6 @@ python main.py
 ```sh
 python -m password_manager.gui
 ```
-or
-```sh
-python password_manager/gui.py
-```
 
 - Log in with your master password.
 - Add, search, view, copy, and delete credentials securely.
