@@ -1,9 +1,9 @@
 # Python cache and compiled files
+tests/__pycache__/
 __pycache__/
 *.pyc
 # Virtual environment
 venv/
-env/
 # SQLite database and sensitive files
 vault.db
 master_pass.json

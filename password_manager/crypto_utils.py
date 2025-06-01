@@ -14,7 +14,6 @@ def encrypt_gcm(plaintext: bytes, key: bytes) -> tuple:
     """Encrypt plaintext using AES-GCM. Returns (ciphertext, nonce/iv)."""
     cipher = AES.new(key, AES.MODE_GCM)
     ciphertext, tag = cipher.encrypt_and_digest(plaintext)
-    # Store tag with ciphertext for authentication
     enc = base64.b64encode(tag + ciphertext)
     return enc, cipher.nonce
 
@@ -26,6 +25,7 @@ def decrypt_gcm(enc_data: bytes, key: bytes, nonce: bytes) -> bytes:
     return cipher.decrypt_and_verify(ciphertext, tag)
 
 def hash_password(password: str, salt: bytes = None, iterations: int = 200_000) -> dict:
+    """Hash a password with PBKDF2-HMAC-SHA256 and return salt, hash, and iterations."""
     if salt is None:
         salt = get_random_bytes(16)
     hash_bytes = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations, dklen=32)
@@ -36,6 +36,7 @@ def hash_password(password: str, salt: bytes = None, iterations: int = 200_000) 
     }
 
 def verify_password(password: str, hash_dict: dict) -> bool:
+    """Verify a password against a stored hash dictionary."""
     salt = bytes.fromhex(hash_dict["salt"])
     iterations = hash_dict.get("iterations", 200_000)
     hash_bytes = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations, dklen=32)
