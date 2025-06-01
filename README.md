@@ -47,7 +47,7 @@ PasswordManager/
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/yourusername/PasswordManager.git
+   git clone https://github.com/Akshat1276/PasswordManager.git
    cd PasswordManager
    ```
 
