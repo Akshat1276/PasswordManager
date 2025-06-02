@@ -38,3 +38,16 @@ def delete_credential(entry_id):
     with get_connection() as conn:
         conn.execute("DELETE FROM credentials WHERE id=?", (entry_id,))
         conn.commit()
+
+def update_credential(entry_id, service, username, new_password, key):
+    """
+    Update the password for an existing credential in the database.
+    """
+    encrypted, iv = encrypt_gcm(new_password.encode(), key)
+    with get_connection() as conn:
+        cur = conn.execute(
+            "UPDATE credentials SET encrypted_password=?, iv=? WHERE id=?",
+            (encrypted, iv, entry_id)
+        )
+        conn.commit()
+        return cur.rowcount > 0  # True if a row was updated
