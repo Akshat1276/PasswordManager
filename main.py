@@ -1,21 +1,37 @@
 import os
 import getpass
 import json
+import time
 from password_manager.crypto_utils import derive_key, hash_password, verify_password
 
 MASTER_PASS_FILE = "master_pass.json"
 
 def set_master_password():
-    password = getpass.getpass("Set a master password: ")
-    pass_key = getpass.getpass("Set a pass key (for sensitive actions): ")
-    personal_answer = getpass.getpass("Which city were you born in? (case sensitive): ")
+    print("Set up your master password for the password manager.")
+    password = input("Enter new master password: ")
+    confirm = input("Confirm new master password: ")
+    if password != confirm:
+        print("Passwords do not match. Exiting setup.")
+        return
+
+    # Optionally, set up pass key and personal answer here
+    pass_key = input("Set a pass key for sensitive actions: ")
+    personal_answer = input("Set answer to your personal question (e.g., city you were born in): ")
+
     hash_dict = hash_password(password)
     pass_key_hash = hash_password(pass_key)
     personal_answer_hash = hash_password(personal_answer)
-    # Store all hashes in the same file
+
+    # Write all info, including last_changed
     with open(MASTER_PASS_FILE, "w") as f:
-        json.dump({"master": hash_dict, "pass_key": pass_key_hash, "personal_answer": personal_answer_hash}, f)
-    print("Master password, pass key, and personal question set.")
+        json.dump({
+            "master": hash_dict,
+            "pass_key": pass_key_hash,
+            "personal_answer": personal_answer_hash,
+            "last_changed": int(time.time())
+        }, f)
+
+    print("Master password setup complete.")
 
 def verify_master_password():
     if not os.path.exists(MASTER_PASS_FILE):
