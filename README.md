@@ -1,7 +1,9 @@
 # 🔐 Password Manager
 
-A secure, cross-platform password manager built with Python and Tkinter.  
+A secure, cross-platform password manager built with Python and Tkinter.
 It stores your credentials in an encrypted local SQLite database, protected by a master password.
+The app features a modern, user-friendly GUI, strong cryptography, multi-factor protections, and productivity tools like search, password generator, and clipboard auto-clear.
+It also includes robust security mechanisms such as login/forgot-password lockout, password strength meter, and regular password change reminders.
 
 ---
 
@@ -9,11 +11,23 @@ It stores your credentials in an encrypted local SQLite database, protected by a
 
 - **AES-GCM (Advanced Encryption Standard in Galois/Counter mode) encryption** for all stored passwords
 - **Master password** (never stored, only its hash)
+- **Password strength checker** in all relevant password prompts (shows Weak/Medium/Strong)
+- **Password generator** tool in password prompts
+- **Clipboard copy** with auto-clear after 10 seconds
 - **Searchable dashboard** for credentials
-- **Password generator** tool
-- **Clipboard copy** with auto-clear
-- **Reset master password** option
-- **Modern, user-friendly GUI**
+- **Multi-select and batch delete** of credentials
+- **Update both username and password** for any saved service
+- **Font scaling and zoom in/out** (Ctrl+Plus/Minus/Equal)
+- **Show/hide password** toggle in all password prompts
+- **Login lockout** after 5 failed attempts (15-minute lockout)
+- **Forgot password lockout** after 5 failed attempts (15-minute lockout)
+- **Prompt to change master password every 10 days** for enhanced security
+- **Reset master password** (with credential re-encryption)
+- **Forgot master password** (deletes all credentials, resets everything)
+- **Pass key required** for sensitive actions (view, copy, update, delete)
+- **Personal question/answer** for password recovery
+- **Input validation:** Prevents blank or space-only entries in all prompts
+- **Modern, user-friendly GUI** (Tkinter)
 - **Unit tests** for core logic
 
 ---
@@ -61,8 +75,28 @@ PasswordManager/
    ```
 
 3. **Install dependencies:**
+   
+   Windows Users
    ```sh
    pip install -r requirements.txt
+   ```
+   MacOS Users
+   ```sh
+   pip install -r requirements.txt
+   ```
+   MacOS users will probably face issues downloading tkinter library. So
+   Install Homebrew (if you don't have it):  
+   [https://brew.sh/](https://brew.sh/)
+
+   Install Python with Tk support via Homebrew:**
+   ```sh
+   brew install python-tk
+   ```
+
+   Or, if you want to ensure your Python installation has Tkinter:
+   ```sh
+   brew install python
+   brew install tcl-tk
    ```
 
 ---
