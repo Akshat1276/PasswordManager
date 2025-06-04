@@ -148,4 +148,5 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 ---
 
 **Enjoy your secure password manager!**
+
 **For learning about hashing, encryption and security, refer <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html">CheatsheetSeries</a>**
