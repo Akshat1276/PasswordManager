@@ -12,6 +12,9 @@ import time
 import tkinter.font as tkfont
 
 MASTER_PASS_FILE = "master_pass.json"
+LOGIN_LOCKOUT_FILE = "login_lockout.json"
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCKOUT_DURATION = 15 * 60  # 15 minutes in seconds
 
 class LoginWindow:
     """Login window for the password manager."""
@@ -70,21 +73,70 @@ class LoginWindow:
         event.widget.configure(style='TButton')
 
     def login(self):
+        # --- Lockout mechanism ---
+        lockout_file = LOGIN_LOCKOUT_FILE
+        max_attempts = LOGIN_MAX_ATTEMPTS
+        lockout_duration = LOGIN_LOCKOUT_DURATION
+
+        # Check for lockout
+        attempts = 0
+        if os.path.exists(lockout_file):
+            with open(lockout_file, "r") as f:
+                lockout_data = json.load(f)
+            locked_until = lockout_data.get("locked_until", 0)
+            attempts = lockout_data.get("attempts", 0)
+            if locked_until > time.time():
+                remaining = int(locked_until - time.time())
+                mins, secs = divmod(remaining, 60)
+                messagebox.showerror(
+                    "Locked Out",
+                    f"Too many incorrect login attempts. Please try again after {mins} minutes {secs} seconds."
+                )
+                return
+            # Only reset attempts if user was previously locked out and lockout has expired
+            if attempts >= max_attempts and locked_until <= time.time():
+                os.remove(lockout_file)
+                attempts = 0
+
         password = self.password_entry.get()
+        if password is None or password.strip() == "":
+            messagebox.showerror("Error", "Password cannot be empty or only spaces.")
+            return
         if not os.path.exists(MASTER_PASS_FILE):
             messagebox.showerror("Error", "No master password set. Run setup first.")
             return
         with open(MASTER_PASS_FILE, "r") as f:
             data = json.load(f)
-        hash_dict = data["master"]  # <-- FIX: get only the master hash dict
+        hash_dict = data["master"]
+
         if verify_password(password, hash_dict):
+            # Reset attempts on success
+            if os.path.exists(lockout_file):
+                os.remove(lockout_file)
             salt = bytes.fromhex(hash_dict["salt"])
             self.key = derive_key(password, salt)
+            last_changed = data.get("last_changed")
+            now = int(time.time())
+            days_10 = 10 * 24 * 60 * 60
+            if not last_changed or now - last_changed > days_10:
+                if messagebox.askyesno(
+                    "Security Reminder",
+                    "It has been more than 10 days since you last changed your master password.\nWould you like to change it now?"
+                ):
+                    self.reset_password()
             messagebox.showinfo("Success", "Login successful!")
             self.master.withdraw()
-            Dashboard(self.master, self.key, self.app_font)  # Pass app_font
+            Dashboard(self.master, self.key, self.app_font)
         else:
-            messagebox.showerror("Error", "Incorrect master password.")
+            attempts += 1
+            if attempts >= max_attempts:
+                with open(lockout_file, "w") as f:
+                    json.dump({"attempts": attempts, "locked_until": time.time() + lockout_duration}, f)
+                messagebox.showerror("Locked Out", "Too many incorrect login attempts. Please try again after 15 minutes.")
+            else:
+                with open(lockout_file, "w") as f:
+                    json.dump({"attempts": attempts, "locked_until": 0}, f)
+                messagebox.showerror("Error", f"Incorrect master password. Attempts left: {max_attempts - attempts}")
 
     def reset_password(self):
         if not os.path.exists(MASTER_PASS_FILE):
@@ -127,6 +179,7 @@ class LoginWindow:
 
         # Save new master password hash
         data["master"] = new_hash_dict
+        data["last_changed"] = int(time.time())
         with open(MASTER_PASS_FILE, "w") as f:
             json.dump(data, f)
 
@@ -145,17 +198,20 @@ class LoginWindow:
         if os.path.exists(lockout_file):
             with open(lockout_file, "r") as f:
                 lockout_data = json.load(f)
-            if lockout_data.get("locked_until", 0) > time.time():
-                remaining = int(lockout_data["locked_until"] - time.time())
+            locked_until = lockout_data.get("locked_until", 0)
+            attempts = lockout_data.get("attempts", 0)
+            if locked_until > time.time():
+                remaining = int(locked_until - time.time())
                 mins, secs = divmod(remaining, 60)
                 messagebox.showerror(
                     "Locked Out",
                     f"Too many incorrect attempts. Please try again after {mins} minutes {secs} seconds."
                 )
                 return
-            else:
-                # Reset attempts after lockout period
+            # Only reset attempts if user was previously locked out and lockout has expired
+            if attempts >= max_attempts and locked_until <= time.time():
                 os.remove(lockout_file)
+                attempts = 0
 
         if not os.path.exists(MASTER_PASS_FILE):
             messagebox.showerror("Error", "No master password set. Run setup first.")
@@ -181,8 +237,17 @@ class LoginWindow:
                 show_generate=False,
                 show_label="Show Text"
             )
-            if not answer:
+            # Check for empty or only spaces (including just space bar)
+            if answer is None:
+                attempts += 0
+                with open(lockout_file, "w") as f:
+                    json.dump({"attempts": attempts, "locked_until": 0}, f)
+                if attempts < max_attempts:
+                    messagebox.showerror("Error", f"Cancelled. Attempts left: {max_attempts - attempts}")
                 return
+            if answer.strip() == "":
+                messagebox.showerror("Error", "Answer cannot be empty or only spaces. Please enter a valid answer.")
+                continue
 
             if verify_password(answer, personal_answer_hash):
                 break  # Correct answer, proceed
@@ -221,7 +286,8 @@ class LoginWindow:
 
         # 4. Ask the user to set up a new master password
         new_password = ask_password("Setup Master Password", "Enter new master password:")
-        if not new_password:
+        if new_password is None or new_password.strip() == "":
+            messagebox.showerror("Error", "Input cannot be empty or only spaces.")
             return
         confirm_password = ask_password("Setup Master Password", "Confirm new master password:")
         if new_password != confirm_password:
@@ -234,7 +300,8 @@ class LoginWindow:
             json.dump({
                 "master": hash_dict,
                 "pass_key": data["pass_key"],
-                "personal_answer": data["personal_answer"]
+                "personal_answer": data["personal_answer"],
+                "last_changed": int(time.time())
             }, f)
 
         messagebox.showinfo("Success", "Master password has been reset. All previous credentials have been deleted.")
@@ -325,7 +392,13 @@ class Dashboard(tk.Toplevel):
 
     def add_entry(self):
         service = simpledialog.askstring("Service", "Enter service name:")
+        if service is None or service.strip() == "":
+            messagebox.showerror("Error", "Service name cannot be empty or only spaces.")
+            return
         username = simpledialog.askstring("Username", "Enter username:")
+        if username is None or username.strip() == "":
+            messagebox.showerror("Error", "Username cannot be empty or only spaces.")
+            return
         password = ask_password("Password", "Enter password:")
         if not service or not username or not password:
             messagebox.showerror("Error", "All fields are required.")
@@ -458,9 +531,9 @@ class Dashboard(tk.Toplevel):
             return
 
         new_password = ask_password("Update Password", f"Enter new password for {entry['service']}:")
-        if not new_password:
+        if new_password is None or new_password.strip() == "":
+            messagebox.showerror("Error", "Input cannot be empty or only spaces.")
             return
-
         from password_manager.manager import update_credential
         updated = update_credential(entry_id, entry['service'], new_username, new_password, self.key)
         if updated:
@@ -545,6 +618,15 @@ class PasswordPrompt(simpledialog.Dialog):
         if self.show_generate:
             gen_btn = ttk.Button(master, text="Generate", command=self.generate_password, style='TButton')
             gen_btn.grid(row=1, column=2, padx=5, pady=5)
+
+        if self.show_generate:       
+            # Password strength label
+            self.strength_var = tk.StringVar(value="Strength: ")
+            self.strength_label = ttk.Label(master, textvariable=self.strength_var, font=self.app_font)
+            self.strength_label.grid(row=2, column=0, columnspan=3, pady=(0, 5))
+            # Bind to update strength as user types
+            self.var.trace_add("write", self.update_strength)
+
         return self.entry
 
     def toggle_show(self):
@@ -554,9 +636,13 @@ class PasswordPrompt(simpledialog.Dialog):
             self.entry.config(show="*")
 
     def generate_password(self):
-        # Default length 16, you can prompt for length if you want
         pwd = generate_password(8)
         self.var.set(pwd)
+
+    def update_strength(self, *args):
+        pwd = self.var.get()
+        strength = check_password_strength(pwd)
+        self.strength_var.set(f"Strength: {strength}")
 
     def apply(self):
         self.password = self.var.get()
@@ -610,6 +696,24 @@ def reencrypt_all_credentials(old_key, new_key):
         password = cred['password']
         # Update credential with new key (this will re-encrypt)
         update_credential(entry_id, service, username, password, new_key)
+
+def check_password_strength(password):
+    length = len(password)
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_symbol = any(c in string.punctuation for c in password)
+
+    score = sum([has_lower, has_upper, has_digit, has_symbol])
+
+    if length < 8 or score < 2:
+        return "Weak"
+    elif length >= 8 and score == 2:
+        return "Medium"
+    elif length >= 10 and score >= 3:
+        return "Strong"
+    else:
+        return "Medium"
 
 if __name__ == "__main__":
     key = get_encryption_key_via_gui()
